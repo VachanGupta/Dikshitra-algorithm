@@ -1,100 +1,79 @@
 export function floydWarshall(grid, startNode, finishNode) {
-    const visitedNodesInOrder = [];
-    const nodes = getAllNodes(grid);
-    const n = nodes.length;
+    const rows = grid.length;
+    const cols = grid[0].length;
+    const nodeCount = rows * cols;
   
-    // Map each node to an index
-    const indexMap = new Map();
-    nodes.forEach((node, idx) => {
-      indexMap.set(node, idx);
-    });
+    const dist = Array(nodeCount).fill(null).map(() => Array(nodeCount).fill(Infinity));
+    const next = Array(nodeCount).fill(null).map(() => Array(nodeCount).fill(null));
   
-    // Initialize distance and next arrays
-    const dist = Array.from({ length: n }, () => Array(n).fill(Infinity));
-    const next = Array.from({ length: n }, () => Array(n).fill(null));
+    const index = (r, c) => r * cols + c;
   
-    // Distance from node to itself = 0
-    for (let i = 0; i < n; i++) {
-      dist[i][i] = 0;
-    }
-  
-    // Add edges for grid neighbors
-    for (const node of nodes) {
-      if (node.isWall) continue;
-      const neighbors = getNeighbors(node, grid);
-      for (const neighbor of neighbors) {
-        if (neighbor.isWall) continue;
-        const u = indexMap.get(node);
-        const v = indexMap.get(neighbor);
-        dist[u][v] = 1; // weight = 1
-        next[u][v] = neighbor;
+    for (let r = 0; r < rows; r++) {
+      for (let c = 0; c < cols; c++) {
+        if (grid[r][c].isWall) continue;
+        const u = index(r, c);
+        dist[u][u] = 0;
+        next[u][u] = u;
+        const neighbors = getNeighbors(grid, grid[r][c]);
+        for (const neighbor of neighbors) {
+          const v = index(neighbor.row, neighbor.col);
+          dist[u][v] = 1;
+          next[u][v] = v;
+        }
       }
     }
   
-    // Floyd–Warshall main loop
-    for (let k = 0; k < n; k++) {
-      for (let i = 0; i < n; i++) {
-        for (let j = 0; j < n; j++) {
+    let visitedNodesInOrder = [];
+  
+    for (let k = 0; k < nodeCount; k++) {
+      for (let i = 0; i < nodeCount; i++) {
+        for (let j = 0; j < nodeCount; j++) {
           if (dist[i][k] + dist[k][j] < dist[i][j]) {
             dist[i][j] = dist[i][k] + dist[k][j];
             next[i][j] = next[i][k];
+  
+            const { row, col } = fromIndex(i, cols);
+            if (!visitedNodesInOrder.some(n => n.row === row && n.col === col)) {
+              visitedNodesInOrder.push({ row, col });
+            }
           }
         }
       }
     }
   
-    // Reconstruct path from start to finish
-    const path = [];
-    const startIdx = indexMap.get(startNode);
-    const endIdx = indexMap.get(finishNode);
-  
-    if (next[startIdx][endIdx] === null) {
-      return visitedNodesInOrder; // no path
-    }
-  
-    let current = startNode;
-    while (current !== finishNode) {
-      path.push(current);
-      visitedNodesInOrder.push(current);
-      current = next[indexMap.get(current)][endIdx];
-      if (!current) break;
-    }
-    path.push(finishNode);
-    visitedNodesInOrder.push(finishNode);
-  
-    // Mark visited nodes for visualization
-    visitedNodesInOrder.forEach(node => (node.isVisited = true));
-  
-    return visitedNodesInOrder;
+    const path = reconstructPath(index(startNode.row, startNode.col), index(finishNode.row, finishNode.col), next, cols);
+    return { visitedNodesInOrder, path };
   }
   
-  function getNeighbors(node, grid) {
+  export function getFWPathNodes(grid, path) {
+    return path.map(([r, c]) => grid[r][c]);
+  }
+  
+  function getNeighbors(grid, node) {
+    const { row, col } = node;
     const neighbors = [];
-    const { col, row } = node;
     if (row > 0) neighbors.push(grid[row - 1][col]);
     if (row < grid.length - 1) neighbors.push(grid[row + 1][col]);
     if (col > 0) neighbors.push(grid[row][col - 1]);
     if (col < grid[0].length - 1) neighbors.push(grid[row][col + 1]);
-    return neighbors;
+    return neighbors.filter(n => !n.isWall);
   }
   
-  function getAllNodes(grid) {
-    const nodes = [];
-    for (const row of grid) {
-      for (const node of row) {
-        nodes.push(node);
-      }
+  function reconstructPath(u, v, next, cols) {
+    if (next[u][v] === null) return [];
+    const path = [];
+    let current = u;
+    while (current !== v) {
+      path.push(fromIndex(current, cols, true)); 
+      current = next[current][v];
     }
-    return nodes;
+    path.push(fromIndex(v, cols, true));
+    return path;
   }
   
-  export function getNodesInShortestPathOrderFW(finishNode) {
-    const nodesInShortestPathOrder = [];
-    let currentNode = finishNode;
-    while (currentNode !== null) {
-      nodesInShortestPathOrder.unshift(currentNode);
-      currentNode = currentNode.previousNode;
-    }
-    return nodesInShortestPathOrder;
+  function fromIndex(index, cols, asArray = false) {
+    const row = Math.floor(index / cols);
+    const col = index % cols;
+    return asArray ? [row, col] : { row, col };
   }
   

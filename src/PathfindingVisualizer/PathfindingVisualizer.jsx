@@ -2,7 +2,7 @@ import React, { Component } from 'react';
 import Node from './Node/Node';
 import { dijkstra, getNodesInShortestPathOrder } from '../algorithms/dijkstra';
 import { bellmanFord } from '../algorithms/bmf';
-import { floydWarshall } from '../algorithms/Floyd_Warshal';
+import { floydWarshall, getFWPathNodes } from '../algorithms/Floyd_Warshal';
 import './PathfindingVisualizer.css';
 
 export default class PathfindingVisualizer extends Component {
@@ -69,19 +69,19 @@ export default class PathfindingVisualizer extends Component {
     this.setState({ mouseIsPressed: false });
   }
 
-  animateAlgorithm(visitedNodesInOrder, nodesInShortestPathOrder) {
+  animateAlgorithm(visitedNodesInOrder, nodesInShortestPathOrder, speed = 10) {
     for (let i = 0; i <= visitedNodesInOrder.length; i++) {
       if (i === visitedNodesInOrder.length) {
         setTimeout(() => {
           this.animateShortestPath(nodesInShortestPathOrder);
-        }, 10 * i);
+        }, speed * i);
         return;
       }
       setTimeout(() => {
         const node = visitedNodesInOrder[i];
         document.getElementById(`node-${node.row}-${node.col}`).className =
           'node node-visited';
-      }, 10 * i);
+      }, speed * i);
     }
   }
 
@@ -105,7 +105,7 @@ export default class PathfindingVisualizer extends Component {
     const finishNode = grid[endNodePos.row][endNodePos.col];
     const visitedNodesInOrder = dijkstra(grid, startNode, finishNode);
     const nodesInShortestPathOrder = getNodesInShortestPathOrder(finishNode);
-    this.animateAlgorithm(visitedNodesInOrder, nodesInShortestPathOrder);
+    this.animateAlgorithm(visitedNodesInOrder, nodesInShortestPathOrder, 10);
   }
 
   visualizeBellmanFord() {
@@ -118,7 +118,7 @@ export default class PathfindingVisualizer extends Component {
     const finishNode = grid[endNodePos.row][endNodePos.col];
     const visitedNodesInOrder = bellmanFord(grid, startNode, finishNode);
     const nodesInShortestPathOrder = getNodesInShortestPathOrder(finishNode);
-    this.animateAlgorithm(visitedNodesInOrder, nodesInShortestPathOrder);
+    this.animateAlgorithm(visitedNodesInOrder, nodesInShortestPathOrder, 10);
   }
 
   visualizeFloydWarshall() {
@@ -129,8 +129,11 @@ export default class PathfindingVisualizer extends Component {
     }
     const startNode = grid[startNodePos.row][startNodePos.col];
     const finishNode = grid[endNodePos.row][endNodePos.col];
-    const visitedNodesInOrder = floydWarshall(grid, startNode, finishNode);
-    this.animateAlgorithm(visitedNodesInOrder, [finishNode]);
+
+    const { visitedNodesInOrder, path } = floydWarshall(grid, startNode, finishNode);
+    const nodesInShortestPathOrder = getFWPathNodes(grid, path);
+
+    this.animateAlgorithm(visitedNodesInOrder, nodesInShortestPathOrder, 1);
   }
 
   render() {
@@ -143,40 +146,31 @@ export default class PathfindingVisualizer extends Component {
           {selectingMode === 'end' && 'Click a cell to select END node'}
           {selectingMode === 'walls' && 'Click and drag to add/remove walls'}
         </p>
-        <button onClick={() => this.visualizeDijkstra()}>
-          Visualize Dijkstra
-        </button>
-        <button onClick={() => this.visualizeBellmanFord()}>
-          Visualize Bellman-Ford
-        </button>
-        <button onClick={() => this.visualizeFloydWarshall()}>
-          Visualize Floyd-Warshall
-        </button>
+        <button onClick={() => this.visualizeDijkstra()}>Visualize Dijkstra</button>
+        <button onClick={() => this.visualizeBellmanFord()}>Visualize Bellman-Ford</button>
+        <button onClick={() => this.visualizeFloydWarshall()}>Visualize Floyd-Warshall</button>
         <div className="grid">
-          {grid.map((row, rowIdx) => {
-            return (
-              <div key={rowIdx}>
-                {row.map((node, nodeIdx) => {
-                  const { row, col, isFinish, isStart, isWall } = node;
-                  return (
-                    <Node
-                      key={nodeIdx}
-                      col={col}
-                      isFinish={isFinish}
-                      isStart={isStart}
-                      isWall={isWall}
-                      mouseIsPressed={mouseIsPressed}
-                      onMouseDown={(row, col) => this.handleMouseDown(row, col)}
-                      onMouseEnter={(row, col) =>
-                        this.handleMouseEnter(row, col)
-                      }
-                      onMouseUp={() => this.handleMouseUp()}
-                      row={row}></Node>
-                  );
-                })}
-              </div>
-            );
-          })}
+          {grid.map((row, rowIdx) => (
+            <div key={rowIdx}>
+              {row.map((node, nodeIdx) => {
+                const { row, col, isFinish, isStart, isWall } = node;
+                return (
+                  <Node
+                    key={nodeIdx}
+                    col={col}
+                    isFinish={isFinish}
+                    isStart={isStart}
+                    isWall={isWall}
+                    mouseIsPressed={mouseIsPressed}
+                    onMouseDown={(row, col) => this.handleMouseDown(row, col)}
+                    onMouseEnter={(row, col) => this.handleMouseEnter(row, col)}
+                    onMouseUp={() => this.handleMouseUp()}
+                    row={row}
+                  ></Node>
+                );
+              })}
+            </div>
+          ))}
         </div>
       </>
     );

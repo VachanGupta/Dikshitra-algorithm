@@ -2,14 +2,12 @@ export function bellmanFord(grid, startNode, finishNode) {
     const visitedNodesInOrder = [];
     const nodes = getAllNodes(grid);
   
-    // Initialize distances
     for (const node of nodes) {
       node.distance = Infinity;
       node.previousNode = null;
     }
     startNode.distance = 0;
   
-    // Relax edges (V-1) times
     const V = nodes.length;
     for (let i = 0; i < V - 1; i++) {
       let updated = false;
@@ -19,7 +17,7 @@ export function bellmanFord(grid, startNode, finishNode) {
         const neighbors = getNeighbors(node, grid);
         for (const neighbor of neighbors) {
           if (neighbor.isWall) continue;
-          const newDist = node.distance + 1; // weight = 1 for grid moves
+          const newDist = node.distance + 1;
           if (newDist < neighbor.distance) {
             neighbor.distance = newDist;
             neighbor.previousNode = node;
@@ -27,10 +25,9 @@ export function bellmanFord(grid, startNode, finishNode) {
           }
         }
       }
-      if (!updated) break; // optimization: stop if no update
+      if (!updated) break; 
     }
   
-    // Build visited order (just mark visited in BFS-like order for visualization)
     for (const node of nodes) {
       if (node.distance !== Infinity) {
         node.isVisited = true;
