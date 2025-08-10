@@ -1,6 +1,8 @@
 import React, { Component } from 'react';
 import Node from './Node/Node';
 import { dijkstra, getNodesInShortestPathOrder } from '../algorithms/dijkstra';
+import { bellmanFord } from '../algorithms/bmf';
+import { floydWarshall } from '../algorithms/Floyd_Warshal';
 import './PathfindingVisualizer.css';
 
 export default class PathfindingVisualizer extends Component {
@@ -11,7 +13,7 @@ export default class PathfindingVisualizer extends Component {
       mouseIsPressed: false,
       startNodePos: null,
       endNodePos: null,
-      selectingMode: 'start', // 'start', 'end', 'walls'
+      selectingMode: 'start',
     };
   }
 
@@ -21,9 +23,8 @@ export default class PathfindingVisualizer extends Component {
   }
 
   handleMouseDown(row, col) {
-    const { selectingMode, grid, startNodePos, endNodePos } = this.state;
+    const { selectingMode, grid } = this.state;
 
-    // Selecting start node
     if (selectingMode === 'start') {
       const newGrid = grid.map(r =>
         r.map(node => ({
@@ -39,7 +40,6 @@ export default class PathfindingVisualizer extends Component {
       return;
     }
 
-    // Selecting end node
     if (selectingMode === 'end') {
       const newGrid = grid.map(r =>
         r.map(node => ({
@@ -55,7 +55,6 @@ export default class PathfindingVisualizer extends Component {
       return;
     }
 
-    // Default: wall placing
     const newGrid = getNewGridWithWallToggled(grid, row, col);
     this.setState({ grid: newGrid, mouseIsPressed: true });
   }
@@ -70,7 +69,7 @@ export default class PathfindingVisualizer extends Component {
     this.setState({ mouseIsPressed: false });
   }
 
-  animateDijkstra(visitedNodesInOrder, nodesInShortestPathOrder) {
+  animateAlgorithm(visitedNodesInOrder, nodesInShortestPathOrder) {
     for (let i = 0; i <= visitedNodesInOrder.length; i++) {
       if (i === visitedNodesInOrder.length) {
         setTimeout(() => {
@@ -106,7 +105,32 @@ export default class PathfindingVisualizer extends Component {
     const finishNode = grid[endNodePos.row][endNodePos.col];
     const visitedNodesInOrder = dijkstra(grid, startNode, finishNode);
     const nodesInShortestPathOrder = getNodesInShortestPathOrder(finishNode);
-    this.animateDijkstra(visitedNodesInOrder, nodesInShortestPathOrder);
+    this.animateAlgorithm(visitedNodesInOrder, nodesInShortestPathOrder);
+  }
+
+  visualizeBellmanFord() {
+    const { grid, startNodePos, endNodePos } = this.state;
+    if (!startNodePos || !endNodePos) {
+      alert('Please select both start and end nodes before running the algorithm!');
+      return;
+    }
+    const startNode = grid[startNodePos.row][startNodePos.col];
+    const finishNode = grid[endNodePos.row][endNodePos.col];
+    const visitedNodesInOrder = bellmanFord(grid, startNode, finishNode);
+    const nodesInShortestPathOrder = getNodesInShortestPathOrder(finishNode);
+    this.animateAlgorithm(visitedNodesInOrder, nodesInShortestPathOrder);
+  }
+
+  visualizeFloydWarshall() {
+    const { grid, startNodePos, endNodePos } = this.state;
+    if (!startNodePos || !endNodePos) {
+      alert('Please select both start and end nodes before running the algorithm!');
+      return;
+    }
+    const startNode = grid[startNodePos.row][startNodePos.col];
+    const finishNode = grid[endNodePos.row][endNodePos.col];
+    const visitedNodesInOrder = floydWarshall(grid, startNode, finishNode);
+    this.animateAlgorithm(visitedNodesInOrder, [finishNode]);
   }
 
   render() {
@@ -120,7 +144,13 @@ export default class PathfindingVisualizer extends Component {
           {selectingMode === 'walls' && 'Click and drag to add/remove walls'}
         </p>
         <button onClick={() => this.visualizeDijkstra()}>
-          Visualize the algorithm
+          Visualize Dijkstra
+        </button>
+        <button onClick={() => this.visualizeBellmanFord()}>
+          Visualize Bellman-Ford
+        </button>
+        <button onClick={() => this.visualizeFloydWarshall()}>
+          Visualize Floyd-Warshall
         </button>
         <div className="grid">
           {grid.map((row, rowIdx) => {
@@ -153,7 +183,6 @@ export default class PathfindingVisualizer extends Component {
   }
 }
 
-// ---------- Helper functions ----------
 const getInitialGrid = () => {
   const grid = [];
   for (let row = 0; row < 20; row++) {
