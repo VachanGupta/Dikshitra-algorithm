@@ -79,8 +79,10 @@ export default class PathfindingVisualizer extends Component {
       }
       setTimeout(() => {
         const node = visitedNodesInOrder[i];
-        document.getElementById(`node-${node.row}-${node.col}`).className =
-          'node node-visited';
+        if (node) {
+          document.getElementById(`node-${node.row}-${node.col}`).className =
+            'node node-visited';
+        }
       }, speed * i);
     }
   }
@@ -89,8 +91,10 @@ export default class PathfindingVisualizer extends Component {
     for (let i = 0; i < nodesInShortestPathOrder.length; i++) {
       setTimeout(() => {
         const node = nodesInShortestPathOrder[i];
-        document.getElementById(`node-${node.row}-${node.col}`).className =
-          'node node-shortest-path';
+        if (node) {
+          document.getElementById(`node-${node.row}-${node.col}`).className =
+            'node node-shortest-path';
+        }
       }, 50 * i);
     }
   }
@@ -133,7 +137,7 @@ export default class PathfindingVisualizer extends Component {
     const { visitedNodesInOrder, path } = floydWarshall(grid, startNode, finishNode);
     const nodesInShortestPathOrder = getFWPathNodes(grid, path);
 
-    this.animateAlgorithm(visitedNodesInOrder, nodesInShortestPathOrder, 1);
+    this.animateAlgorithm(visitedNodesInOrder, nodesInShortestPathOrder, 10);
   }
 
   render() {
